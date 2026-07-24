@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cornerstone Realty - Agent Design Lab (Week 1)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="container">
+    
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="brand-icon">🏢</div>
+        <div class="brand-text">
+          <h1>Cornerstone Realty Group (Alexandria Branch)</h1>
+          <p>Autonomous Viewing Scheduling System — Agent Design Lab (Week 1)</p>
+        </div>
+      </div>
+      <span class="badge-tag">FCDS - Alexandria University</span>
+    </header>
+
+    <!-- Benchmark & Input Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>💬</span>
+        <span>Egyptian Arabic Customer Viewing Request (تنسيق مواعيد المعاينات)</span>
+      </div>
+      <div class="input-group">
+        <textarea id="user-input" placeholder="أدخل رسالة العميل بالعامية المصرية...">أنا واقف قدام العمارة بتاعة شقة 102 في سموحة وعايز أدخل أشوفها حالاً، ولو غير متاحة أو محتاجة إذن الساكن احجزلي شقة 105 في جليم الساعة 8 المغرب النهاردة، أو قولّي أقرب ميعاد لشقة 102 عشان مسافر القاهرة!</textarea>
+        <div class="action-bar">
+          <div class="btn-group">
+            <button id="fill-benchmark-btn" class="btn btn-secondary">📌 Load Benchmark Input</button>
+            <button id="reset-db-btn" class="btn btn-warning">🔄 Reset Database</button>
+          </div>
+          <button id="run-all-btn" class="btn btn-primary">🚀 Run Benchmark (All 4 Agents)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 Agents Grid: 2 Per Row (Row 1: Non-ReAct, Row 2: ReAct Comparison) -->
+    <div class="card-title" style="margin-bottom: 1rem;">
+      <span>⚡</span>
+      <span>Live Agent Trajectories & Outputs</span>
+    </div>
+
+    <div class="agents-grid">
+      
+      <!-- ROW 1, COL 1: Reactive Agent -->
+      <div class="agent-column" id="agent-col-reactive">
+        <div class="agent-header">
+          <span class="agent-name">1. Reactive Agent (Rule-Based)</span>
+        </div>
+        <div class="metrics-row">
+          <div class="metric-item">
+            <span class="metric-label">LLM Calls</span>
+            <span class="metric-val val-calls">0</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Tokens</span>
+            <span class="metric-val val-tokens">0</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Latency</span>
+            <span class="metric-val val-latency">0s</span>
+          </div>
+        </div>
+        <div class="final-answer-box">اضغط على زر التشغيل لرؤية النتيجة...</div>
+        <div class="trajectory-container"></div>
+      </div>
+
+      <!-- ROW 1, COL 2: Deterministic Router -->
+      <div class="agent-column" id="agent-col-routing">
+        <div class="agent-header">
+          <span class="agent-name">2. Deterministic Router</span>
+        </div>
+        <div class="metrics-row">
+          <div class="metric-item">
+            <span class="metric-label">LLM Calls</span>
+            <span class="metric-val val-calls">0</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Tokens</span>
+            <span class="metric-val val-tokens">0</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Latency</span>
+            <span class="metric-val val-latency">0s</span>
+          </div>
+        </div>
+        <div class="final-answer-box">اضغط على زر التشغيل لرؤية النتيجة...</div>
+        <div class="trajectory-container"></div>
+      </div>
+
+      <!-- ROW 2, COL 1: Unconstrained ReAct -->
+      <div class="agent-column" id="agent-col-unconstrained_react">
+        <div class="agent-header">
+          <span class="agent-name">3. Unconstrained ReAct</span>
+        </div>
+        <div class="metrics-row">
+          <div class="metric-item">
+            <span class="metric-label">LLM Calls</span>
+            <span class="metric-val val-calls">0</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Tokens</span>
+            <span class="metric-val val-tokens">0</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Latency</span>
+            <span class="metric-val val-latency">0s</span>
+          </div>
+        </div>
+        <div class="final-answer-box">اضغط على زر التشغيل لرؤية النتيجة...</div>
+        <div class="trajectory-container"></div>
+      </div>
+
+      <!-- ROW 2, COL 2: Constrained ReAct -->
+      <div class="agent-column" id="agent-col-constrained_react">
+        <div class="agent-header">
+          <span class="agent-name">4. Constrained ReAct</span>
+        </div>
+        <div class="metrics-row">
+          <div class="metric-item">
+            <span class="metric-label">LLM Calls</span>
+            <span class="metric-val val-calls">0</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Tokens</span>
+            <span class="metric-val val-tokens">0</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Latency</span>
+            <span class="metric-val val-latency">0s</span>
+          </div>
+        </div>
+        <div class="final-answer-box">اضغط على زر التشغيل لرؤية النتيجة...</div>
+        <div class="trajectory-container"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
