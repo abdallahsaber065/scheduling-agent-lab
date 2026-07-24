@@ -1,0 +1,22 @@
+# SQLite Database
+database.db
+
+# Environment & Secrets
+.env
+*.env
+
+# Internal Team Docs & Notes (Untracked)
+my_docs/
+docs/
+
+# Python & UV Cache
+__pycache__/
+*.pyc
+.venv/
+.uv/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
