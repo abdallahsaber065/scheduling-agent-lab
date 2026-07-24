@@ -14,12 +14,15 @@ ALLOWED_ACTIONS = [
 class ActionInput(BaseModel):
     """Explicit parameters schema for tool actions, ensuring strict JSON schema compliance."""
     model_config = ConfigDict(extra="forbid")
-    property_id: Optional[str] = Field(default=None, description="Target property ID (e.g. APT-102 or APT-105)")
-    agent_id: Optional[str] = Field(default=None, description="Target agent ID (e.g. AG-01 or AG-02)")
-    customer_name: Optional[str] = Field(default=None, description="Customer name for booking")
-    time_slot: Optional[str] = Field(default=None, description="Target time slot (e.g. Today 17:00, Today 20:00, Tomorrow 11:00)")
-    reason: Optional[str] = Field(default=None, description="Escalation reason")
-    response_text: Optional[str] = Field(default=None, description="Final response in Egyptian Arabic")
+    property_id: Optional[str] = Field(default=None, description="Target property ID (e.g., APT-102, APT-105)")
+    agent_id: Optional[str] = Field(default=None, description="Target real estate agent ID (e.g., AG-01, AG-02)")
+    customer_name: Optional[str] = Field(default=None, description="Customer name for viewing reservation")
+    time_slot: Optional[str] = Field(default=None, description="Target viewing time slot (e.g., Today 17:00, Today 20:00, Today 21:00)")
+    reason: Optional[str] = Field(default=None, description="Detailed explanation for escalation to human broker")
+    response_text: Optional[str] = Field(
+        default=None,
+        description="Final polite response in natural Egyptian Arabic, translating all database codes into friendly terms (e.g., OCCUPIED -> فيها ساكن حالياً, Today 21:00 -> النهاردة الساعة 9 بالليل)."
+    )
 
 class AgentStep(BaseModel):
     """
@@ -29,7 +32,7 @@ class AgentStep(BaseModel):
     model_config = ConfigDict(extra="forbid")
     thought: str = Field(
         ...,
-        description="Detailed step-by-step reasoning explaining what fact is needed next."
+        description="Detailed step-by-step reasoning explaining current state, policy evaluation, and next required action."
     )
     action: Literal[
         "check_agent_calendar",
@@ -40,7 +43,15 @@ class AgentStep(BaseModel):
         "final_answer"
     ] = Field(
         ...,
-        description="The exact tool action to invoke. Must be one of the explicit allow-listed functions."
+        description=(
+            "The exact tool action to invoke:\n"
+            "- 'get_property_access_rules': Verify occupancy status and required advance notice hours for a property.\n"
+            "- 'check_agent_calendar': Check whether an agent is free or busy at a specific time slot.\n"
+            "- 'suggest_alternative_time': Find available viewing slots when an agent is unavailable or requested slot is busy.\n"
+            "- 'book_viewing': Confirm a reservation if property access rules and agent schedule allow it.\n"
+            "- 'escalate_to_human_broker': Escalate complex edge cases requiring human negotiation.\n"
+            "- 'final_answer': Provide the final polite response in Egyptian Arabic to the customer."
+        )
     )
     action_input: ActionInput = Field(
         default_factory=ActionInput,
@@ -48,5 +59,5 @@ class AgentStep(BaseModel):
     )
     is_final: bool = Field(
         default=False,
-        description="Set to true if this step produces the final polite Arabic response to the user."
+        description="Set to true when executing final_answer to terminate the ReAct reasoning loop."
     )

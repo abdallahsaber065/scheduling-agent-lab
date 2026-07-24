@@ -44,34 +44,36 @@ def reset_db_endpoint():
 @app.post("/api/run/{agent_type}")
 def run_agent_endpoint(agent_type: str, request: AgentRunRequest):
     """
-    Executes a single agent architecture with custom or benchmark input.
+    Executes a single agent architecture with custom or benchmark input and selected LLM model.
     Agent types: 'reactive', 'routing', 'unconstrained_react', 'constrained_react'.
     """
     input_text = request.user_input or BENCHMARK_INPUT
+    model = request.model_name
 
     if agent_type == "reactive":
         res = run_reactive_agent(input_text)
     elif agent_type == "routing":
-        res = run_routing_agent(input_text)
+        res = run_routing_agent(input_text, model_name=model)
     elif agent_type == "unconstrained_react":
-        res = run_unconstrained_react_agent(input_text)
+        res = run_unconstrained_react_agent(input_text, model_name=model)
     elif agent_type == "constrained_react":
-        res = run_constrained_react_agent(input_text)
+        res = run_constrained_react_agent(input_text, model_name=model)
     else:
         raise HTTPException(status_code=400, detail=f"Unknown agent type '{agent_type}'")
 
     return res
 
-@app.get("/api/benchmark")
-def run_all_benchmark():
+@app.post("/api/benchmark")
+def run_all_benchmark(request: Optional[AgentRunRequest] = None):
     """
     Executes the benchmark input across ALL 4 agent architectures
     (Non-ReAct pair first, followed by side-by-side ReAct pair)
     """
+    model = request.model_name if request else None
     r1 = run_reactive_agent(BENCHMARK_INPUT)
-    r2 = run_routing_agent(BENCHMARK_INPUT)
-    r3 = run_unconstrained_react_agent(BENCHMARK_INPUT)
-    r4 = run_constrained_react_agent(BENCHMARK_INPUT)
+    r2 = run_routing_agent(BENCHMARK_INPUT, model_name=model)
+    r3 = run_unconstrained_react_agent(BENCHMARK_INPUT, model_name=model)
+    r4 = run_constrained_react_agent(BENCHMARK_INPUT, model_name=model)
 
     return {
         "benchmark_input": BENCHMARK_INPUT,

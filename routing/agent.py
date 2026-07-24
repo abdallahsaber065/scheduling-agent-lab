@@ -1,6 +1,7 @@
 import os
 import json
 import time
+from typing import Literal, Optional
 from dotenv import load_dotenv
 from litellm import completion
 from pydantic import BaseModel, Field
@@ -19,12 +20,13 @@ class IntentClassification(BaseModel):
     requested_time: str = Field(..., description="Requested viewing time slot (e.g. Today 17:00 or Today 20:00)")
     reasoning: str = Field(..., description="Brief rationale for classification")
 
-def run_routing_agent(user_input: str = BENCHMARK_INPUT) -> dict:
+def run_routing_agent(user_input: str = BENCHMARK_INPUT, model_name: Optional[str] = None) -> dict:
     """
     Deterministic Routing Agent:
     Uses 1 constrained LLM call to classify intent, then routes to a fixed Python code path.
     """
-    model_name = os.getenv("MODEL_NAME", "gemini/gemini-2.5-flash")
+    if not model_name:
+        model_name = os.getenv("MODEL_NAME", "mistral/mistral-small-2506")
     start_time = time.time()
     trajectory = []
 

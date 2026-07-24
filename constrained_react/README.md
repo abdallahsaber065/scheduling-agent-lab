@@ -10,8 +10,8 @@ Governed ReAct loop enforcing strict engineering constraints: Pydantic schema va
 - **Bounded Retries**: Defined in [`agent.py`](file:///f:/Collage/Autonomous%20Agents/Week%201/constrained_react/agent.py) (`@retry(stop=stop_after_attempt(3))`).
 
 ## Model / Provider Expected
-- Configured via `MODEL_NAME` in `.env` using **LiteLLM**.
-- Supported Providers: Gemini (`gemini/gemini-2.5-flash`), Groq (`groq/openai/gpt-oss-120b`), OpenAI (`openai/gpt-4o-mini`), OpenRouter, Ollama.
+- Primary Model: **`gemini/gemini-3.5-lite`** (configured via `MODEL_NAME` in `.env` using **LiteLLM**).
+- Alternate Supported Models: `gemini/gemini-3.6-flash`, `mistral/mistral-small-2506`, `groq/llama-3.3-70b-versatile`, `openai/gpt-4o-mini`.
 
 ## How to Run
 ```bash

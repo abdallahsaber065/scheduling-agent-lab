@@ -26,10 +26,41 @@
 
     <!-- Benchmark & Input Card -->
     <div class="card">
-      <div class="card-title">
-        <span>💬</span>
-        <span>Egyptian Arabic Customer Viewing Request (تنسيق مواعيد المعاينات)</span>
+      <div class="card-header-bar">
+        <div class="card-title">
+          <span>💬</span>
+          <span>Egyptian Arabic Customer Viewing Request (تنسيق مواعيد المعاينات)</span>
+        </div>
+        
+        <!-- Model Selector Bar -->
+        <div class="model-select-container">
+          <label for="model-select" class="model-select-label">🤖 Engine:</label>
+          <select id="model-select" class="model-dropdown">
+            <optgroup label="Mistral AI Models">
+              <option value="mistral/mistral-small-2506" selected>Mistral Small 2506 (2.25M TPM)</option>
+              <option value="mistral/codestral-2508">Codestral 2508 (JSON & Schema)</option>
+              <option value="mistral/open-mistral-nemo">Open-Mistral-Nemo (12B)</option>
+              <option value="mistral/mistral-medium-2508">Mistral Medium 2508</option>
+              <option value="mistral/mistral-large-2512">Mistral Large 2512</option>
+            </optgroup>
+            <optgroup label="Google Gemini Models">
+              <option value="gemini/gemini-3.6-flash">Gemini 3.6 Flash (10 RPM | 1.5K RPD)</option>
+              <option value="gemini/gemini-3.5-flash">Gemini 3.5 Flash (10 RPM | 1.5K RPD)</option>
+              <option value="gemini/gemini-3.5-lite">Gemini 3.5 Flash-Lite (15 RPM | 1K RPD)</option>
+              <option value="gemini/gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite (15 RPM | 1K RPD)</option>
+              <option value="gemini/gemini-2.5-flash">Gemini 2.5 Flash (10 RPM | 1.5K RPD)</option>
+            </optgroup>
+            <optgroup label="Groq Models">
+              <option value="groq/llama-3.3-70b-versatile">Groq: Llama 3.3 70B Versatile</option>
+              <option value="groq/llama-3.1-8b-instant">Groq: Llama 3.1 8B Instant</option>
+              <option value="groq/deepseek-r1-distill-llama-70b">Groq: DeepSeek R1 Distill 70B</option>
+              <option value="groq/gemma2-9b-it">Groq: Gemma 2 9B</option>
+              <option value="groq/mixtral-8x7b-32768">Groq: Mixtral 8x7B</option>
+            </optgroup>
+          </select>
+        </div>
       </div>
+
       <div class="input-group">
         <textarea id="user-input" placeholder="أدخل رسالة العميل بالعامية المصرية...">أنا واقف قدام العمارة بتاعة شقة 102 في سموحة وعايز أدخل أشوفها حالاً، ولو غير متاحة أو محتاجة إذن الساكن احجزلي شقة 105 في جليم الساعة 8 المغرب النهاردة، أو قولّي أقرب ميعاد لشقة 102 عشان مسافر القاهرة!</textarea>
         <div class="action-bar">

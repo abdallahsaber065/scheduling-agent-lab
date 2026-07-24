@@ -4,8 +4,8 @@
 Single constrained LLM call to classify user intent into a fixed set of categories (`BOOK_IMMEDIATE`, `SCHEDULE_FLEXIBLE`, `GENERAL_INFO`). All execution after classification is fixed Python code.
 
 ## Model / Provider Expected
-- Configured via `MODEL_NAME` in `.env` using **LiteLLM**.
-- Supported Providers: Gemini (`gemini/gemini-2.5-flash`), Groq (`groq/openai/gpt-oss-120b`), OpenAI (`openai/gpt-4o-mini`), OpenRouter, Ollama.
+- Primary Model: **`gemini/gemini-3.5-lite`** (configured via `MODEL_NAME` in `.env` using **LiteLLM**).
+- Alternate Supported Models: `gemini/gemini-3.6-flash`, `mistral/mistral-small-2506`, `groq/llama-3.3-70b-versatile`, `openai/gpt-4o-mini`.
 
 ## How to Run
 ```bash

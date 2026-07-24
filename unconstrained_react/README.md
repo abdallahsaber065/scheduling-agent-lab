@@ -4,8 +4,8 @@
 Free-form ReAct loop ($Thought \rightarrow Action \rightarrow Observation$). Allows the LLM freedom over reasoning, tool selection, and stopping points up to a maximum budget of 10 steps (`max_loop = 10`).
 
 ## Model / Provider Expected
-- Configured via `MODEL_NAME` in `.env` using **LiteLLM**.
-- Supported Providers: Gemini (`gemini/gemini-2.5-flash`), Groq (`groq/openai/gpt-oss-120b`), OpenAI (`openai/gpt-4o-mini`), OpenRouter, Ollama.
+- Primary Model: **`gemini/gemini-3.5-lite`** (configured via `MODEL_NAME` in `.env` using **LiteLLM**).
+- Alternate Supported Models: `gemini/gemini-3.6-flash`, `mistral/mistral-small-2506`, `groq/llama-3.3-70b-versatile`, `openai/gpt-4o-mini`.
 
 ## How to Run
 ```bash

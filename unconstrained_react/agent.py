@@ -1,6 +1,7 @@
 import os
 import json
 import time
+from typing import Optional
 from dotenv import load_dotenv
 from litellm import completion
 from tools import check_agent_calendar, get_property_access_rules, book_viewing, suggest_alternative_time, escalate_to_human_broker
@@ -9,33 +10,36 @@ load_dotenv()
 
 BENCHMARK_INPUT = "أنا واقف قدام العمارة بتاعة شقة 102 في سموحة وعايز أدخل أشوفها حالاً، ولو غير متاحة أو محتاجة إذن الساكن احجزلي شقة 105 في جليم الساعة 8 المغرب النهاردة، أو قولّي أقرب ميعاد لشقة 102 عشان مسافر القاهرة!"
 
-SYSTEM_PROMPT = """You are an unconstrained real estate assistant for Cornerstone Realty Group in Alexandria.
-You are given a customer request in Egyptian Arabic.
-You can reason freely using Thought, Action, and Action Input.
+SYSTEM_PROMPT = """You are a real estate scheduling assistant for Cornerstone Realty Group in Alexandria.
+Your goal is to assist customers with property viewing requests in Egyptian Arabic.
 
-Available real estate actions you can call:
-- check_agent_calendar(agent_id, time_slot)
-- get_property_access_rules(property_id)
-- book_viewing(property_id, agent_id, customer_name, time_slot)
-- suggest_alternative_time(property_id, agent_id)
-- escalate_to_human_broker(property_id, reason)
-- final_answer(response_text)
+You operate using a Reasoning and Action (ReAct) loop:
+- Thought: Describe your reasoning about the customer's request and what information or action is needed next.
+- Action: The function/tool to invoke.
+- Action Input: Parameters for the action as a JSON object or string.
 
-You may also call any other tools or actions you think might be needed to solve the customer's request!
+Available real estate functions:
+- check_agent_calendar(agent_id, time_slot): Check agent availability for a time slot.
+- get_property_access_rules(property_id): Verify property occupancy status and required notice period.
+- book_viewing(property_id, agent_id, customer_name, time_slot): Reserve a viewing slot.
+- suggest_alternative_time(property_id, agent_id): Query alternative available viewing slots when requested times are unavailable.
+- escalate_to_human_broker(property_id, reason): Escalate complex cases to a human broker.
+- final_answer(response_text): Provide the final response to the customer.
 
-Output format for each step must be:
-Thought: <your detailed reasoning>
-Action: <action_name>
-Action Input: <json_object_or_string>
+General Guidelines:
+- Check property access rules and agent schedule availability before confirming bookings.
+- If a property is occupied or an agent is unavailable, check for alternative available time slots.
+- Always translate raw system codes into friendly Egyptian Arabic for the customer (e.g., 'OCCUPIED' -> 'فيها ساكن حالياً', 'Today 21:00' -> 'النهاردة الساعة 9 بالليل'). Never output raw English database codes to the customer.
 """
 
-def run_unconstrained_react_agent(user_input: str = BENCHMARK_INPUT, max_loop: int = 10) -> dict:
+def run_unconstrained_react_agent(user_input: str = BENCHMARK_INPUT, max_loop: int = 10, model_name: Optional[str] = None) -> dict:
     """
     Unconstrained LLM-Powered Agent:
     Free-form ReAct loop without strict schema enforcement.
     If an undefined tool is called, returns an observation error message back to the LLM to observe self-correction.
     """
-    model_name = os.getenv("MODEL_NAME", "gemini/gemini-2.5-flash")
+    if not model_name:
+        model_name = os.getenv("MODEL_NAME", "mistral/mistral-small-2506")
     start_time = time.time()
     
     messages = [

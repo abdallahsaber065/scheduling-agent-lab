@@ -7,40 +7,48 @@ BENCHMARK_INPUT = "أنا واقف قدام العمارة بتاعة شقة 102
 def run_reactive_agent(user_input: str = BENCHMARK_INPUT) -> dict:
     """
     Reactive (Rule-Based) Agent:
-    Uses pure regex and hardcoded if/else rules with ZERO LLM calls.
-    
-    EXPECTED FAILURE MODE:
-    It extracts property 'APT-102' and time 'Today 17:00' (الساعة 5) from text,
-    and immediately calls `book_viewing()` without checking property access rules 
-    or agent schedule in SQLite. It double-books an OCCUPIED apartment without 24h notice!
+    Uses generic regex patterns to extract property numbers and time slots,
+    then executes immediate booking via Python rules with zero LLM calls.
     """
     start_time = time.time()
     steps = []
 
-    # Step 1: Rule-based regex extraction
-    property_match = re.search(r"شقة\s*(102|105)", user_input)
-    property_id = f"APT-{property_match.group(1)}" if property_match else "APT-102"
+    # Dynamic Regex Extraction for property number (e.g., captures "شقة 102" or "شقة 105")
+    property_match = re.search(r"شقة\s*(\d+)", user_input)
+    if not property_match:
+        property_match = re.search(r"\b(\d{3})\b", user_input)
+    
+    extracted_number = property_match.group(1) if property_match else "102"
+    property_id = f"APT-{extracted_number}"
 
-    time_match = re.search(r"الساعة\s*5", user_input)
-    time_slot = "Today 17:00" if time_match else "Today 14:00"
+    # Dynamic Regex Extraction for requested time (e.g., "الساعة 5", "الساعة 8", "حالاً")
+    time_number_match = re.search(r"الساع[ةه]\s*(\d+)", user_input)
+    if time_number_match:
+        hour = int(time_number_match.group(1))
+        hour_24 = hour + 12 if hour < 12 else hour
+        time_slot = f"Today {hour_24:02d}:00"
+    elif "حالاً" in user_input or "دلوقتي" in user_input or "فوراً" in user_input:
+        time_slot = "Today 14:00"
+    else:
+        time_slot = "Today 17:00"
 
     steps.append({
         "step": 1,
-        "thought": f"Rule Triggered: Extracted property '{property_id}' and requested time '{time_slot}' via regex.",
+        "thought": f"Rule Triggered: Dynamically extracted property '{property_id}' and target time slot '{time_slot}' via regex.",
         "action": "rule_extraction",
         "action_input": {"property_id": property_id, "time_slot": time_slot},
-        "observation": f"Extracted target property {property_id} and time slot {time_slot}."
+        "observation": f"Extracted property {property_id} and time slot {time_slot} from customer request."
     })
 
-    # Step 2: Reactive execution (No DB lookup check!)
+    # Reactive execution: Attempts direct booking without querying SQLite access/occupancy rules
     steps.append({
         "step": 2,
-        "thought": "Rule Triggered: Time requested matches 'الساعة 5'. Calling book_viewing() immediately without checking property status or schedule.",
+        "thought": f"Rule Triggered: Pattern matched requested viewing time '{time_slot}'. Executing book_viewing() immediately without checking property access rules or agent schedule.",
         "action": "book_viewing",
         "action_input": {
             "property_id": property_id,
             "agent_id": "AG-01",
-            "customer_name": "عميل سموحة",
+            "customer_name": "عميل المعاينة",
             "time_slot": time_slot
         },
         "observation": ""
@@ -49,7 +57,7 @@ def run_reactive_agent(user_input: str = BENCHMARK_INPUT) -> dict:
     booking_result = book_viewing(
         property_id=property_id,
         agent_id="AG-01",
-        customer_name="عميل سموحة",
+        customer_name="عميل المعاينة",
         time_slot=time_slot
     )
     steps[1]["observation"] = str(booking_result)
@@ -57,8 +65,7 @@ def run_reactive_agent(user_input: str = BENCHMARK_INPUT) -> dict:
     latency = round(time.time() - start_time, 4)
 
     final_answer = (
-        f"تم حجز معاينة شقة 102 في سموحة فوراً اليوم الساعة 5 مساءً (Today 17:00) مع الوكيل أحمد مصطفى! "
-        f"رقم الحجز: {booking_result['booking_id']}."
+        f"تم تأكيد حجز معاينة العقار {property_id} فوراً في موعد {time_slot} برقم حجز: {booking_result['booking_id']}."
     )
 
     return {
@@ -72,7 +79,7 @@ def run_reactive_agent(user_input: str = BENCHMARK_INPUT) -> dict:
         "total_tokens": 0,
         "latency_seconds": latency,
         "status": "failed_due_to_business_rule_violation",
-        "failure_reason": "Double-booked APT-102 without checking SQLite DB 'status' ('OCCUPIED'). Violated 24-hour notice constraint for current tenant!"
+        "failure_reason": f"Double-booked {property_id} without checking SQLite DB 'status' ('OCCUPIED'). Violated advance notice constraint for current tenant!"
     }
 
 if __name__ == "__main__":

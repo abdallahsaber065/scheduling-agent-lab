@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     runAllBtn.addEventListener('click', async () => {
         const query = inputArea.value.trim() || BENCHMARK_INPUT;
+        const modelSelect = document.getElementById('model-select');
+        const selectedModel = modelSelect ? modelSelect.value : null;
+
         runAllBtn.disabled = true;
         runAllBtn.innerHTML = '<span class="spinner"></span> Running 4 Agents...';
 
@@ -37,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetch(`/api/run/${type}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_input: query })
+                    body: JSON.stringify({ user_input: query, model_name: selectedModel })
                 }).then(r => r.json())
             );
 

@@ -1,6 +1,7 @@
 import os
 import json
 import time
+from typing import Optional
 from dotenv import load_dotenv
 from litellm import completion
 from tenacity import retry, stop_after_attempt, retry_if_exception_type, wait_fixed
@@ -19,17 +20,30 @@ load_dotenv()
 MAX_STEPS = 10
 BENCHMARK_INPUT = "أنا واقف قدام العمارة بتاعة شقة 102 في سموحة وعايز أدخل أشوفها حالاً، ولو غير متاحة أو محتاجة إذن الساكن احجزلي شقة 105 في جليم الساعة 8 المغرب النهاردة، أو قولّي أقرب ميعاد لشقة 102 عشان مسافر القاهرة!"
 
-SYSTEM_PROMPT = f"""You are a governed real estate assistant for Cornerstone Realty Group in Alexandria.
-You are given a customer viewing request in Egyptian Arabic.
+SYSTEM_PROMPT = f"""You are a professional real estate scheduling assistant for Cornerstone Realty Group in Alexandria.
+Your goal is to coordinate property viewings for customers, handle multi-property inquiries, and assist with scheduling.
 
-STRICT GOVERNANCE RULES:
-1. MAX_STEPS = {MAX_STEPS}. You must achieve a resolution within {MAX_STEPS} steps.
-2. TOOL ALLOW-LIST: You can ONLY choose actions from: {ALLOWED_ACTIONS}.
-3. REAL ESTATE LOGIC & REASONING:
-   - Always query property access rules using get_property_access_rules(property_id) and agent schedule using check_agent_calendar(agent_id, time_slot) or suggest_alternative_time(property_id, agent_id).
-   - If a requested property is OCCUPIED (requiring 24h advance notice), explain that immediate entry today is forbidden under policy, and offer to submit a booking/request for it after the notice period.
-   - If a requested vacant property is unavailable at the exact time requested (e.g. agent busy), check for the nearest available time slot on the same day (e.g. 1 hour later) or suggest available slots before jumping to future days.
-   - Conclude with action 'final_answer' setting is_final=true and providing a helpful, polite Egyptian Arabic response summarizing options and asking the customer if they wish to confirm.
+OPERATIONAL GUIDELINES & POLICY RULES:
+1. MAX_STEPS = {MAX_STEPS}. Efficiently resolve the request within the step limit.
+2. ALLOWED ACTIONS: You must ONLY invoke actions from the following list: {ALLOWED_ACTIONS}.
+3. PROPERTY ACCESS & OCCUPANCY POLICY:
+   - Always query property access rules using get_property_access_rules(property_id) before attempting a booking.
+   - If a property is OCCUPIED (requiring advance notice), immediate same-day entry is forbidden under company policy. Inform the customer of the notice requirement and offer to schedule/request a viewing slot after the notice period.
+4. AGENT CALENDAR & ALTERNATIVE SLOTS:
+   - Verify agent calendar availability using check_agent_calendar(agent_id, time_slot).
+   - If an agent is unavailable or a requested time slot is busy (is_available = false), use suggest_alternative_time(property_id, agent_id) to query available same-day or nearest open time slots for the customer.
+5. CUSTOMER TRANSLATION & ARABIC LOCALIZATION DIRECTIVE:
+   - Always translate technical database values and time formats into natural Egyptian Arabic for the customer:
+     * 'OCCUPIED' -> 'مسكونة / فيها ساكن حالياً وتتطلب إشعار مسبق'
+     * 'VACANT' -> 'فارغة ومتاحة للمعاينة'
+     * 'Today 21:00' -> 'النهاردة الساعة 9 بالليل'
+     * 'Today 17:00' -> 'النهاردة الساعة 5 عصراً'
+     * 'Today 20:00' -> 'النهاردة الساعة 8 المغرب'
+     * 'Tomorrow 11:00' -> 'بكرة الساعة 11 الصبح'
+     * 'Tomorrow 15:00' -> 'بكرة الساعة 3 بعد الظهر'
+   - NEVER include raw English database codes like 'OCCUPIED', 'VACANT', or 'Today 21:00' in final_answer response_text!
+6. FINAL RESOLUTION:
+   - Conclude with action 'final_answer' setting is_final=true and providing a clear, polite Egyptian Arabic response summarizing all verified options and asking the customer how they wish to proceed.
 """
 
 @retry(
@@ -65,13 +79,14 @@ def generate_valid_step(model_name: str, messages: list) -> tuple[AgentStep, dic
     }
     return step, usage_data
 
-def run_constrained_react_agent(user_input: str = BENCHMARK_INPUT) -> dict:
+def run_constrained_react_agent(user_input: str = BENCHMARK_INPUT, model_name: Optional[str] = None) -> dict:
     """
     Constrained ReAct Agent:
     Governed ReAct loop enforcing Pydantic schema validation, tool allow-list,
-    MAX_STEPS = 5 budget, and Tenacity retries.
+    MAX_STEPS = 10 budget, and Tenacity retries.
     """
-    model_name = os.getenv("MODEL_NAME", "gemini/gemini-2.5-flash")
+    if not model_name:
+        model_name = os.getenv("MODEL_NAME", "mistral/mistral-small-2506")
     start_time = time.time()
 
     messages = [
