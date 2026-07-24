@@ -1,0 +1,15 @@
+services:
+  scheduling_agent_lab:
+    build: .
+    container_name: scheduling_agent_lab
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8010:8000"
+    networks:
+      - caddy_net
+
+networks:
+  caddy_net:
+    external: true
