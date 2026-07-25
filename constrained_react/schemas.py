@@ -8,6 +8,8 @@ ALLOWED_ACTIONS = [
     "book_viewing",
     "suggest_alternative_time",
     "escalate_to_human_broker",
+    "get_available_locations",
+    "list_properties",
     "final_answer"
 ]
 
@@ -18,6 +20,7 @@ class ActionInput(BaseModel):
     agent_id: Optional[str] = Field(default=None, description="Target real estate agent ID (e.g., AG-01, AG-02)")
     customer_name: Optional[str] = Field(default=None, description="Customer name for viewing reservation")
     time_slot: Optional[str] = Field(default=None, description="Target viewing time slot (e.g., Today 17:00, Today 20:00, Today 21:00)")
+    location: Optional[str] = Field(default=None, description="Location literal for filtering listings: 'Smouha' / 'سموحة' or 'Gleem' / 'جليم'")
     reason: Optional[str] = Field(default=None, description="Detailed explanation for escalation to human broker")
     response_text: Optional[str] = Field(
         default=None,
@@ -40,11 +43,15 @@ class AgentStep(BaseModel):
         "book_viewing",
         "suggest_alternative_time",
         "escalate_to_human_broker",
+        "get_available_locations",
+        "list_properties",
         "final_answer"
     ] = Field(
         ...,
         description=(
             "The exact tool action to invoke:\n"
+            "- 'get_available_locations': Retrieve all distinct available property locations across Alexandria.\n"
+            "- 'list_properties': Browse and filter property listings by location ('Smouha' / 'Gleem'). Validates location presence.\n"
             "- 'get_property_access_rules': Verify occupancy status and required advance notice hours for a property.\n"
             "- 'check_agent_calendar': Check whether an agent is free or busy at a specific time slot.\n"
             "- 'suggest_alternative_time': Find available viewing slots when an agent is unavailable or requested slot is busy.\n"

@@ -4,11 +4,19 @@ import time
 from typing import Optional
 from dotenv import load_dotenv
 from litellm import completion
-from tools import check_agent_calendar, get_property_access_rules, book_viewing, suggest_alternative_time, escalate_to_human_broker
+from tools import (
+    check_agent_calendar,
+    get_property_access_rules,
+    book_viewing,
+    suggest_alternative_time,
+    escalate_to_human_broker,
+    get_available_locations,
+    list_properties
+)
 
 load_dotenv()
 
-BENCHMARK_INPUT = "أنا واقف قدام العمارة بتاعة شقة 102 في سموحة وعايز أدخل أشوفها حالاً، ولو غير متاحة أو محتاجة إذن الساكن احجزلي شقة 105 في جليم الساعة 8 المغرب النهاردة، أو قولّي أقرب ميعاد لشقة 102 عشان مسافر القاهرة!"
+BENCHMARK_INPUT = "أنا واقف قدام العمارة بتاعة شقة 102 في سموحة وعايز أدخل أشوفها حالاً ومين الساكن أو المالك بتاعها عشان أتواصل معاه؟ ولو غير متاحة أو محتاجة إذن الساكن احجزلي شقة 105 في جليم الساعة 8 المغرب النهاردة، أو قولّي أقرب ميعاد لشقة 102 عشان مسافر القاهرة!"
 
 SYSTEM_PROMPT = """You are a real estate scheduling assistant for Cornerstone Realty Group in Alexandria.
 Your goal is to assist customers with property viewing requests in Egyptian Arabic.
@@ -19,6 +27,8 @@ You operate using a Reasoning and Action (ReAct) loop:
 - Action Input: Parameters for the action as a JSON object or string.
 
 Available real estate functions:
+- get_available_locations(): Query all available portfolio locations in Alexandria.
+- list_properties(location): Browse property listings filtered by location literal ('سموحة' / 'Smouha' or 'جليم' / 'Gleem').
 - check_agent_calendar(agent_id, time_slot): Check agent availability for a time slot.
 - get_property_access_rules(property_id): Verify property occupancy status and required notice period.
 - book_viewing(property_id, agent_id, customer_name, time_slot): Reserve a viewing slot.
@@ -27,6 +37,8 @@ Available real estate functions:
 - final_answer(response_text): Provide the final response to the customer.
 
 General Guidelines:
+- If a customer asks about available locations, use get_available_locations().
+- If a customer asks to explore available properties, use list_properties(location). If count=0, inform them of valid available locations.
 - Check property access rules and agent schedule availability before confirming bookings.
 - If a property is occupied or an agent is unavailable, check for alternative available time slots.
 - Always translate raw system codes into friendly Egyptian Arabic for the customer (e.g., 'OCCUPIED' -> 'فيها ساكن حالياً', 'Today 21:00' -> 'النهاردة الساعة 9 بالليل'). Never output raw English database codes to the customer.
@@ -114,7 +126,13 @@ def run_unconstrained_react_agent(user_input: str = BENCHMARK_INPUT, max_loop: i
         is_hallucinated = False
 
         # Execute known tools or log hallucination failure
-        if action == "check_agent_calendar":
+        if action == "get_available_locations":
+            obs = get_available_locations()
+            observation = json.dumps(obs, ensure_ascii=False)
+        elif action == "list_properties":
+            obs = list_properties(action_input.get("location"))
+            observation = json.dumps(obs, ensure_ascii=False)
+        elif action == "check_agent_calendar":
             obs = check_agent_calendar(action_input.get("agent_id", "AG-01"), action_input.get("time_slot", "Today 17:00"))
             observation = json.dumps(obs, ensure_ascii=False)
         elif action == "get_property_access_rules":

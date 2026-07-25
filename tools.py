@@ -106,11 +106,65 @@ def escalate_to_human_broker(property_id: str, reason: str) -> dict:
         "message": f"تم تصعيد الطلب للسمسار البشري برقم تذكرة {ticket_id}. السبب: {reason}"
     }
 
+def get_available_locations() -> dict:
+    """
+    Queries SQLite database to return all distinct available property locations across Alexandria.
+    """
+    results = query_db("SELECT DISTINCT location FROM properties")
+    locations = [r["location"] for r in results]
+    return {
+        "status": "success",
+        "count": len(locations),
+        "available_locations": locations,
+        "message": f"المناطق المتاحة حالياً بشركتنا هي: {', '.join(locations)}."
+    }
+
+def list_properties(location: str = None) -> dict:
+    """
+    Lists real estate property listings filtered by location literal ('سموحة' / 'Smouha' / 'جليم' / 'Gleem' or all).
+    Validates if any properties exist in the requested location and lists valid alternative locations if count is 0.
+    """
+    avail_locs_res = query_db("SELECT DISTINCT location FROM properties")
+    available_locations = [r["location"] for r in avail_locs_res]
+
+    if location and str(location).strip():
+        loc_str = str(location).strip()
+        results = query_db(
+            "SELECT property_id, title, location, status, notice_hours FROM properties WHERE location LIKE ? OR title LIKE ?",
+            (f"%{loc_str}%", f"%{loc_str}%")
+        )
+    else:
+        results = query_db("SELECT property_id, title, location, status, notice_hours FROM properties")
+
+    properties_list = [dict(r) for r in results]
+
+    if not properties_list and location:
+        return {
+            "status": "not_found",
+            "validation": f"No properties found matching location '{location}'.",
+            "requested_location": location,
+            "count": 0,
+            "properties": [],
+            "available_locations": available_locations,
+            "message": f"عذراً، لا توجد أي شقق متاحة في موقع '{location}'. المناطق المتاحة حالياً بشركتنا هي: {', '.join(available_locations)}."
+        }
+
+    return {
+        "status": "success",
+        "location_filter": location or "جميع المناطق",
+        "count": len(properties_list),
+        "properties": properties_list,
+        "available_locations": available_locations,
+        "message": f"تم العثور على {len(properties_list)} عقار/عقارات متاحة في {location or 'جميع المناطق'}."
+    }
+
 # Dictionary mapping tool names to callable Python functions
 AVAILABLE_TOOLS = {
     "check_agent_calendar": check_agent_calendar,
     "get_property_access_rules": get_property_access_rules,
     "book_viewing": book_viewing,
     "suggest_alternative_time": suggest_alternative_time,
-    "escalate_to_human_broker": escalate_to_human_broker
+    "escalate_to_human_broker": escalate_to_human_broker,
+    "get_available_locations": get_available_locations,
+    "list_properties": list_properties
 }

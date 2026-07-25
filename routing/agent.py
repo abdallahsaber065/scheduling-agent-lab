@@ -6,18 +6,19 @@ from dotenv import load_dotenv
 from litellm import completion
 from pydantic import BaseModel, Field
 from typing import Literal
-from tools import check_agent_calendar, get_property_access_rules, book_viewing
+from tools import check_agent_calendar, get_property_access_rules, book_viewing, list_properties
 
 load_dotenv()
 
-BENCHMARK_INPUT = "أنا واقف قدام العمارة بتاعة شقة 102 في سموحة وعايز أدخل أشوفها حالاً، ولو غير متاحة أو محتاجة إذن الساكن احجزلي شقة 105 في جليم الساعة 8 المغرب النهاردة، أو قولّي أقرب ميعاد لشقة 102 عشان مسافر القاهرة!"
+BENCHMARK_INPUT = "أنا واقف قدام العمارة بتاعة شقة 102 في سموحة وعايز أدخل أشوفها حالاً ومين الساكن أو المالك بتاعها عشان أتواصل معاه؟ ولو غير متاحة أو محتاجة إذن الساكن احجزلي شقة 105 في جليم الساعة 8 المغرب النهاردة، أو قولّي أقرب ميعاد لشقة 102 عشان مسافر القاهرة!"
 
 class IntentClassification(BaseModel):
-    intent: Literal["BOOK_IMMEDIATE", "SCHEDULE_FLEXIBLE", "GENERAL_INFO"] = Field(
+    intent: Literal["BOOK_IMMEDIATE", "SCHEDULE_FLEXIBLE", "DISCOVER_PROPERTIES", "GENERAL_INFO"] = Field(
         ..., description="Classifies the customer request intent."
     )
-    property_id: str = Field(..., description="Target primary property ID (e.g. APT-102)")
-    requested_time: str = Field(..., description="Requested viewing time slot (e.g. Today 17:00 or Today 20:00)")
+    property_id: Optional[str] = Field(default=None, description="Target primary property ID (e.g. APT-102)")
+    location: Optional[str] = Field(default=None, description="Target location literal for property discovery (e.g. 'سموحة' / 'Smouha' or 'جليم' / 'Gleem')")
+    requested_time: Optional[str] = Field(default=None, description="Requested viewing time slot (e.g. Today 17:00 or Today 20:00)")
     reasoning: str = Field(..., description="Brief rationale for classification")
 
 def run_routing_agent(user_input: str = BENCHMARK_INPUT, model_name: Optional[str] = None) -> dict:
@@ -125,6 +126,31 @@ def run_routing_agent(user_input: str = BENCHMARK_INPUT, model_name: Optional[st
                 "status": "failed_due_to_rigid_workflow",
                 "failure_reason": "Routing agent classified request as BOOK_IMMEDIATE. When SQLite revealed 24h occupancy restriction, fixed workflow code could not dynamically pivot to suggest alternative slots."
             }
+
+    elif classification.intent == "DISCOVER_PROPERTIES":
+        props_res = list_properties(classification.location)
+        trajectory.append({
+            "step": 2,
+            "thought": f"Fixed Workflow Step 1: Query SQLite properties for location '{classification.location}'.",
+            "action": "list_properties",
+            "action_input": {"location": classification.location},
+            "observation": json.dumps(props_res, ensure_ascii=False)
+        })
+        props_text = "\n".join([f"- {p['title']} (الحالة: {'فيها ساكن' if p['status']=='OCCUPIED' else 'فارغة ومتاحة'})" for p in props_res.get("properties", [])])
+        final_text = f"إليك العقارات المتاحة للاكتشاف في {classification.location or 'جميع المناطق'}:\n{props_text}\nأيها ترغب في معاينته؟"
+        return {
+            "agent_type": "routing",
+            "input": user_input,
+            "final_answer": final_text,
+            "trajectory": trajectory,
+            "llm_calls": llm_calls,
+            "prompt_tokens": total_prompt_tokens,
+            "completion_tokens": total_completion_tokens,
+            "total_tokens": total_prompt_tokens + total_completion_tokens,
+            "latency_seconds": round(time.time() - start_time, 4),
+            "status": "completed",
+            "failure_reason": None
+        }
 
     # Default fallback for other intents
     latency = round(time.time() - start_time, 4)

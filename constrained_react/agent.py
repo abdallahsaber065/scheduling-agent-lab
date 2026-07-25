@@ -11,14 +11,16 @@ from tools import (
     get_property_access_rules,
     book_viewing,
     suggest_alternative_time,
-    escalate_to_human_broker
+    escalate_to_human_broker,
+    get_available_locations,
+    list_properties
 )
 
 load_dotenv()
 
 # Hard termination budget as required by assignment
 MAX_STEPS = 10
-BENCHMARK_INPUT = "أنا واقف قدام العمارة بتاعة شقة 102 في سموحة وعايز أدخل أشوفها حالاً، ولو غير متاحة أو محتاجة إذن الساكن احجزلي شقة 105 في جليم الساعة 8 المغرب النهاردة، أو قولّي أقرب ميعاد لشقة 102 عشان مسافر القاهرة!"
+BENCHMARK_INPUT = "أنا واقف قدام العمارة بتاعة شقة 102 في سموحة وعايز أدخل أشوفها حالاً ومين الساكن أو المالك بتاعها عشان أتواصل معاه؟ ولو غير متاحة أو محتاجة إذن الساكن احجزلي شقة 105 في جليم الساعة 8 المغرب النهاردة، أو قولّي أقرب ميعاد لشقة 102 عشان مسافر القاهرة!"
 
 SYSTEM_PROMPT = f"""You are a professional real estate scheduling assistant for Cornerstone Realty Group in Alexandria.
 Your goal is to coordinate property viewings for customers, handle multi-property inquiries, and assist with scheduling.
@@ -26,13 +28,17 @@ Your goal is to coordinate property viewings for customers, handle multi-propert
 OPERATIONAL GUIDELINES & POLICY RULES:
 1. MAX_STEPS = {MAX_STEPS}. Efficiently resolve the request within the step limit.
 2. ALLOWED ACTIONS: You must ONLY invoke actions from the following list: {ALLOWED_ACTIONS}.
-3. PROPERTY ACCESS & OCCUPANCY POLICY:
+3. LOCATION DISCOVERY & PROPERTY LISTINGS:
+   - To query available portfolio locations, use get_available_locations().
+   - If a customer is exploring or discovering options without specifying a property ID, call list_properties(location) using location literals ('Smouha' / 'سموحة' or 'Gleem' / 'جليم').
+   - LOCATION VALIDATION: If list_properties(location) returns count=0 or status='not_found', validate the result to the customer and suggest the valid available locations returned by the tool ('سموحة' or 'جليم').
+4. PROPERTY ACCESS & OCCUPANCY POLICY:
    - Always query property access rules using get_property_access_rules(property_id) before attempting a booking.
    - If a property is OCCUPIED (requiring advance notice), immediate same-day entry is forbidden under company policy. Inform the customer of the notice requirement and offer to schedule/request a viewing slot after the notice period.
-4. AGENT CALENDAR & ALTERNATIVE SLOTS:
+5. AGENT CALENDAR & ALTERNATIVE SLOTS:
    - Verify agent calendar availability using check_agent_calendar(agent_id, time_slot).
    - If an agent is unavailable or a requested time slot is busy (is_available = false), use suggest_alternative_time(property_id, agent_id) to query available same-day or nearest open time slots for the customer.
-5. CUSTOMER TRANSLATION & ARABIC LOCALIZATION DIRECTIVE:
+6. CUSTOMER TRANSLATION & ARABIC LOCALIZATION DIRECTIVE:
    - Always translate technical database values and time formats into natural Egyptian Arabic for the customer:
      * 'OCCUPIED' -> 'مسكونة / فيها ساكن حالياً وتتطلب إشعار مسبق'
      * 'VACANT' -> 'فارغة ومتاحة للمعاينة'
@@ -42,7 +48,7 @@ OPERATIONAL GUIDELINES & POLICY RULES:
      * 'Tomorrow 11:00' -> 'بكرة الساعة 11 الصبح'
      * 'Tomorrow 15:00' -> 'بكرة الساعة 3 بعد الظهر'
    - NEVER include raw English database codes like 'OCCUPIED', 'VACANT', or 'Today 21:00' in final_answer response_text!
-6. FINAL RESOLUTION:
+7. FINAL RESOLUTION:
    - Conclude with action 'final_answer' setting is_final=true and providing a clear, polite Egyptian Arabic response summarizing all verified options and asking the customer how they wish to proceed.
 """
 
@@ -126,7 +132,13 @@ def run_constrained_react_agent(user_input: str = BENCHMARK_INPUT, model_name: O
         action_name = step_obj.action
         action_in = step_obj.action_input.model_dump(exclude_none=True) if hasattr(step_obj.action_input, "model_dump") else step_obj.action_input
 
-        if action_name == "check_agent_calendar":
+        if action_name == "get_available_locations":
+            obs_dict = get_available_locations()
+            observation = json.dumps(obs_dict, ensure_ascii=False)
+        elif action_name == "list_properties":
+            obs_dict = list_properties(action_in.get("location"))
+            observation = json.dumps(obs_dict, ensure_ascii=False)
+        elif action_name == "check_agent_calendar":
             obs_dict = check_agent_calendar(action_in.get("agent_id", "AG-01"), action_in.get("time_slot", "Today 17:00"))
             observation = json.dumps(obs_dict, ensure_ascii=False)
         elif action_name == "get_property_access_rules":
