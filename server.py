@@ -89,4 +89,5 @@ if __name__ == "__main__":
     import uvicorn
     if not os.path.exists("database.db"):
         init_database()
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    should_reload = os.getenv("RELOAD", "false").lower() == "true"
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=should_reload)
