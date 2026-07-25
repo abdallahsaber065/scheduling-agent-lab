@@ -4,20 +4,20 @@ WORKDIR /app
 
 # Install uv binary via official installer script
 RUN apt-get update && apt-get install -y curl && curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PATH="/root/.local/bin:${PATH}"
 
 # Copy dependency specifications
 COPY pyproject.toml uv.lock ./
 
 # Sync dependencies using uv
-RUN uv sync --frozen --no-cache
+RUN /root/.local/bin/uv sync --frozen --no-cache
 
 # Copy application source files
 COPY . .
 
 # Initialize SQLite database
-RUN uv run python init_db.py
+RUN /root/.local/bin/uv run python init_db.py
 
 EXPOSE 8000
 
-CMD ["uv", "run", "python", "server.py"]
+CMD ["/root/.local/bin/uv", "run", "python", "server.py"]
